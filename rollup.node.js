@@ -1,27 +1,20 @@
-#!/usr/bin/env node
-
 var fs = require("fs"),
     rollup = require("rollup"),
-    dependencies = require("../package.json").dependencies;
+    dependencies = require("./package.json").dependencies;
 
 rollup.rollup({
-  entry: "index.js",
+  input: "index.js",
   external: Object.keys(dependencies)
 }).then(function(bundle) {
-  var code = bundle.generate({
-    format: "cjs"
-  }).code.replace(
-    /^exports\.event = (.*);$/m,
-    "Object.defineProperty(exports, \"event\", {get: function() { return $1; }});"
-  );
+  return bundle.generate({format: "cjs"});
+}).then(function(result) {
+  var code = result.code + "Object.defineProperty(exports, \"event\", {get: function() { return d3Selection.event; }});\n";
   return new Promise(function(resolve, reject) {
     fs.writeFile("build/d3.node.js", code, "utf8", function(error) {
       if (error) return reject(error);
       else resolve();
     });
   });
-}).then(function() {
-  console.warn("↳ build/d3.node.js");
 }).catch(abort);
 
 function abort(error) {
